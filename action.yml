@@ -1,0 +1,92 @@
+name: Deploy Ory Agent
+description: Create or reuse an Ory Agent Security deployment and write its one-time runtime credential to a protected file.
+author: Ory
+
+branding:
+  icon: shield
+  color: purple
+
+inputs:
+  api-key:
+    description: Project-scoped deployment automation API key with agent-security:deployments scope.
+    required: true
+  project-url:
+    description: Exact Ory Network project origin.
+    required: true
+  agent-security-url:
+    description: Exact Ory Agent Security origin.
+    required: false
+    default: https://agents.console.ory.com
+  manifest:
+    description: Path to the deployment manifest.
+    required: false
+    default: .ory/agent.yaml
+  deployment-id:
+    description: Existing deployment ID to validate and reuse. Omit only for initial creation.
+    required: false
+  credential-file:
+    description: Destination for a newly issued runtime credential. Defaults to a protected runner temporary file.
+    required: false
+  version:
+    description: Ory Agent CLI version. By default, the action requires an exact semantic-version action tag and uses that version.
+    required: false
+
+outputs:
+  deployment-id:
+    description: Created or reused Agent Security deployment ID.
+    value: ${{ steps.deploy.outputs.deployment-id }}
+  created:
+    description: Whether this run created the deployment and issued a one-time runtime credential.
+    value: ${{ steps.deploy.outputs.created }}
+  credential-file:
+    description: Protected runtime credential path. The file exists only when created is true.
+    value: ${{ steps.deploy.outputs.credential-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve Ory Agent CLI version
+      id: version
+      shell: bash
+      env:
+        REQUESTED_VERSION: ${{ inputs.version }}
+        ACTION_REF: ${{ github.action_ref }}
+      run: |
+        set -euo pipefail
+        version="${REQUESTED_VERSION#v}"
+        if [[ -z "${version}" ]]; then
+          [[ "${ACTION_REF}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]] || {
+            echo "::error::Set the version input when the action is not pinned to an exact vX.Y.Z tag."
+            exit 1
+          }
+          version="${BASH_REMATCH[1]}"
+        fi
+        [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+          echo "::error::version must be an exact semantic version."
+          exit 1
+        }
+        printf 'version=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
+
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+    - name: Install Ory Agent CLI
+      shell: bash
+      env:
+        ORY_AGENT_VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        "${GITHUB_ACTION_PATH}/scripts/install.sh" "${ORY_AGENT_VERSION}" "${RUNNER_TEMP}/ory-agent-action/bin"
+        printf '%s\n' "${RUNNER_TEMP}/ory-agent-action/bin" >> "${GITHUB_PATH}"
+
+    - name: Create or reuse deployment
+      id: deploy
+      shell: bash
+      env:
+        ORY_AGENT_DEPLOY_API_KEY: ${{ inputs.api-key }}
+        ORY_PROJECT_URL: ${{ inputs.project-url }}
+        ORY_AGENT_SECURITY_URL: ${{ inputs.agent-security-url }}
+        MANIFEST: ${{ inputs.manifest }}
+        DEPLOYMENT_ID: ${{ inputs.deployment-id }}
+        REQUESTED_CREDENTIAL_FILE: ${{ inputs.credential-file }}
+      run: |
+        "${GITHUB_ACTION_PATH}/scripts/deploy.sh"

@@ -1,0 +1,25 @@
+name: Test deployment action
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Validate action and scripts
+        run: |
+          set -euo pipefail
+          bash -n scripts/install.sh
+          bash -n scripts/deploy.sh
+          bash scripts/test.sh
+          ruby -e 'require "yaml"; action = YAML.load_file("action.yml"); abort "missing composite runs" unless action.dig("runs", "using") == "composite"'
+          grep -Fq 'ORY_AGENT_DEPLOY_API_KEY' action.yml
+          grep -Fq 'agent-security:deployments' action.yml
+          grep -Fq 'cosign verify-blob' scripts/install.sh
