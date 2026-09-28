@@ -51,7 +51,11 @@ run_deploy "" true ""
 grep -Fxq 'deployment-id=new-deployment-id' "${tmp}/output"
 grep -Fxq 'created=true' "${tmp}/output"
 grep -Fxq "credential-file=${tmp}/credential.env" "${tmp}/output"
-mode="$(stat -f '%Lp' "${tmp}/credential.env" 2>/dev/null || stat -c '%a' "${tmp}/credential.env")"
+if [[ "$(uname -s)" == Darwin ]]; then
+  mode="$(stat -f '%Lp' "${tmp}/credential.env")"
+else
+  mode="$(stat -c '%a' "${tmp}/credential.env")"
+fi
 [[ "${mode}" == 600 ]]
 if grep -Fq 'deployment-secret' "${tmp}/output"; then
   echo "deployment API key leaked into action outputs" >&2
