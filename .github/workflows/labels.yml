@@ -1,0 +1,25 @@
+# AUTO-GENERATED, DO NOT EDIT!
+# Please edit the original at https://github.com/ory/meta/blob/master/templates/repository/common/.github/workflows/labels.yml
+
+name: Synchronize Issue Labels
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  milestone:
+    if: github.repository_owner == 'ory'
+    name: Synchronize Issue Labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Synchronize Issue Labels
+        uses: ory/label-sync-action@f080c2b8ac988f2fc90ddbbc8749c6ee55477f21 # v0.0.4
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          dry: false
+          forced: true
