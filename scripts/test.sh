@@ -15,15 +15,26 @@ fi
 if [[ "${1:-}" == deployment && "${2:-}" == run ]]; then
   shift 2
   result_file=""
+  credential_file=""
+  deployment_id=""
   while (($#)); do
     case "$1" in
       --result-file) result_file="$2"; shift 2 ;;
+      --credential-file) credential_file="$2"; shift 2 ;;
+      --deployment-id) deployment_id="$2"; shift 2 ;;
       --) shift; break ;;
       *) shift ;;
     esac
   done
-  printf '{"created":true,"deployment_id":"ephemeral-deployment-id"}\n' > "${result_file}"
-  printf 'ORY_AGENT_API_KEY=runtime-secret\n' | "$@"
+  if [[ -z "${deployment_id}" ]]; then
+    deployment_id="new-session-deployment-id"
+    printf 'ORY_AGENT_API_KEY=runtime-secret\n' > "${credential_file}"
+    created=true
+  else
+    created=false
+  fi
+  printf '{"created":%s,"deployment_id":"%s"}\n' "${created}" "${deployment_id}" > "${result_file}"
+  "$@" < "${credential_file}"
   exit 0
 fi
 [[ "${1:-}" == deployment && "${2:-}" == ensure ]]
@@ -98,18 +109,23 @@ PATH="${tmp}/bin:${PATH}" \
   MANIFEST=".ory/agent.yaml" \
   RUN_COMMAND="read -r credential; [[ \"\${credential}\" == \"ORY_AGENT_API_KEY=runtime-secret\" ]]" \
   "${root}/scripts/deploy.sh"
-grep -Fxq 'deployment-id=ephemeral-deployment-id' "${tmp}/output"
+grep -Fxq 'deployment-id=new-session-deployment-id' "${tmp}/output"
 grep -Fxq 'created=true' "${tmp}/output"
-grep -Fxq 'credential-file=' "${tmp}/output"
+grep -Fxq "credential-file=${tmp}/runner/ory-agent-action/ory-agent.env" "${tmp}/output"
 [[ ! -e "${tmp}/runner/ory-agent-action/result.json" ]]
 
-if PATH="${tmp}/bin:${PATH}" \
+: > "${tmp}/output"
+printf 'ORY_AGENT_API_KEY=runtime-secret\n' > "${tmp}/credential.env"
+# The nested bash launched by deploy.sh expands the credential expression.
+# shellcheck disable=SC2016
+PATH="${tmp}/bin:${PATH}" \
   RUNNER_TEMP="${tmp}/runner" \
   GITHUB_OUTPUT="${tmp}/output" \
   ORY_AGENT_DEPLOY_API_KEY="deployment-secret" \
-  RUN_COMMAND=true \
+  ORY_PROJECT_URL="https://project.example.test" \
+  REQUESTED_CREDENTIAL_FILE="${tmp}/credential.env" \
+  RUN_COMMAND='read -r credential; [[ "${credential}" == "ORY_AGENT_API_KEY=runtime-secret" ]]' \
   DEPLOYMENT_ID="existing-deployment-id" \
-  "${root}/scripts/deploy.sh" >/dev/null 2>&1; then
-  echo "deploy.sh accepted run with deployment-id" >&2
-  exit 1
-fi
+  "${root}/scripts/deploy.sh"
+grep -Fxq 'deployment-id=existing-deployment-id' "${tmp}/output"
+grep -Fxq 'created=false' "${tmp}/output"

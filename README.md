@@ -4,7 +4,7 @@ Public release artifacts and the deployment action for the Ory Agent CLI.
 
 ## Deployment action
 
-The action installs the CLI matching its exact release tag and verifies the signed release checksum manifest. With `run`, it creates an ephemeral Agent Security deployment, passes the runtime credential to a trusted command over stdin, verifies activation, and revokes automatically:
+The action installs the CLI matching its exact release tag and verifies the signed release checksum manifest. With `run`, it creates an Agent Security deployment once, passes its reusable runtime credential to a trusted command over stdin, and verifies activation:
 
 ```yaml
 - id: ory-agent
@@ -16,7 +16,7 @@ The action installs the CLI matching its exact release tag and verifies the sign
     run: python e2b/deploy.py probe --template-file "${RUNNER_TEMP}/e2b-template.json"
 ```
 
-The command runs under `bash -euo pipefail -c` and inherits the workflow environment, with deployment credentials removed by the CLI. Its stdin contains only the generated runtime configuration. Do not use `run` for an untrusted command or one that needs interactive stdin.
+The command runs under `bash -euo pipefail -c` and inherits the workflow environment, with deployment-administration credentials removed by the CLI. Its stdin contains only the deployment runtime configuration. Do not use `run` for an untrusted command or one that needs interactive stdin. Persist the protected credential file in an external secret store and restore it together with the non-secret deployment ID before later runs.
 
 Omit `run` to create or reuse a durable deployment and receive its one-time credential file:
 
@@ -32,4 +32,4 @@ Omit `run` to create or reuse a durable deployment and receive its one-time cred
 
 Omit `deployment-id` only when creating the deployment for the first time. Persist the resulting non-secret `deployment-id` output before the next run. A reused deployment does not reissue its one-time runtime credential, so the deployment command must reuse the credential already stored by the target platform when `created` is `false`.
 
-The deployment API key is sent only to the configured Agent Security origin. The action never outputs secret contents. Ephemeral `run` mode always revokes its new deployment; durable mode never implicitly replaces or revokes one.
+The deployment API key is sent only to the configured Agent Security origin. The action never outputs secret contents, never creates a replacement deployment for a run, and never implicitly revokes a deployment. Use `ory-agent deployment revoke` only when retiring the registered agent and its package.

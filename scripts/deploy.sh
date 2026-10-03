@@ -11,41 +11,44 @@ echo "::add-mask::${ORY_AGENT_DEPLOY_API_KEY}"
 manifest="${MANIFEST:-.ory/agent.yaml}"
 action_dir="${RUNNER_TEMP:?RUNNER_TEMP is required}/ory-agent-action"
 result_file="${action_dir}/result.json"
+credential_file="${REQUESTED_CREDENTIAL_FILE:-${action_dir}/ory-agent.env}"
+state_file="${action_dir}/deployment.json"
 mkdir -p "${action_dir}"
 rm -f -- "${result_file}"
 trap 'rm -f -- "${result_file}"' EXIT
 
 if [[ -n "${RUN_COMMAND:-}" ]]; then
-  [[ -z "${DEPLOYMENT_ID:-}" ]] || {
-    echo "::error::deployment-id cannot be combined with run."
+  [[ "${credential_file}" != *$'\n'* && "${credential_file}" != *$'\r'* ]] || {
+    echo "::error::credential-file must be a single-line path."
     exit 1
   }
-  [[ -z "${REQUESTED_CREDENTIAL_FILE:-}" ]] || {
-    echo "::error::credential-file cannot be combined with run."
+  mkdir -p "$(dirname "${credential_file}")" "$(dirname "${state_file}")"
+  if [[ -n "${DEPLOYMENT_ID:-}" && ! -s "${credential_file}" ]]; then
+    echo "::error::Reusing a deployment with run requires its protected credential-file to be restored first."
     exit 1
-  }
+  fi
   ory-agent validate --manifest "${manifest}"
-  ory-agent deployment run \
-    --manifest "${manifest}" \
-    --result-file "${result_file}" \
-    -- bash -euo pipefail -c "${RUN_COMMAND}"
+  args=(deployment run --manifest "${manifest}" --state-file "${state_file}" --credential-file "${credential_file}" --result-file "${result_file}")
+  if [[ -n "${DEPLOYMENT_ID:-}" ]]; then
+    args+=(--deployment-id "${DEPLOYMENT_ID}")
+  fi
+  ory-agent "${args[@]}" -- bash -euo pipefail -c "${RUN_COMMAND}"
 
   actual_id="$(jq -er '.deployment_id' "${result_file}")"
+  created="$(jq -r '.created' "${result_file}")"
   printf 'deployment-id=%s\n' "${actual_id}" >> "${GITHUB_OUTPUT:?GITHUB_OUTPUT is required}"
-  printf 'created=true\n' >> "${GITHUB_OUTPUT}"
-  printf 'credential-file=\n' >> "${GITHUB_OUTPUT}"
+  printf 'created=%s\n' "${created}" >> "${GITHUB_OUTPUT}"
+  printf 'credential-file=%s\n' "${credential_file}" >> "${GITHUB_OUTPUT}"
   if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
-    printf "### Ory Agent deployment\n\n- Deployment ID: \`%s\`\n- Ephemeral: \`true\`\n- Revoked: \`true\`\n" "${actual_id}" >> "${GITHUB_STEP_SUMMARY}"
+    printf "### Ory Agent deployment session\n\n- Deployment ID: \`%s\`\n- Created: \`%s\`\n- Revoked: \`false\`\n" "${actual_id}" "${created}" >> "${GITHUB_STEP_SUMMARY}"
   fi
   exit 0
 fi
 
-credential_file="${REQUESTED_CREDENTIAL_FILE:-${action_dir}/ory-agent.env}"
 [[ "${credential_file}" != *$'\n'* && "${credential_file}" != *$'\r'* ]] || {
   echo "::error::credential-file must be a single-line path."
   exit 1
 }
-state_file="${action_dir}/deployment.json"
 mkdir -p "$(dirname "${credential_file}")" "$(dirname "${state_file}")"
 [[ ! -e "${credential_file}" ]] || {
   echo "::error::credential-file already exists; refusing to overwrite it."

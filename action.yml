@@ -1,5 +1,5 @@
 name: Deploy Ory Agent
-description: Run a trusted deployment command with an ephemeral Agent Security credential, or create and reuse a durable deployment.
+description: Create or reuse an Agent Security deployment and run trusted deployment sessions.
 author: Ory
 
 branding:
@@ -22,13 +22,13 @@ inputs:
     required: false
     default: .ory/agent.yaml
   deployment-id:
-    description: Existing durable deployment ID to validate and reuse. Cannot be combined with run.
+    description: Existing deployment ID to validate and reuse.
     required: false
   credential-file:
-    description: Durable mode destination for a newly issued runtime credential. Cannot be combined with run.
+    description: Protected runtime credential path. Restore this file before reusing a deployment with run.
     required: false
   run:
-    description: Trusted command for an ephemeral deployment. The action passes the runtime credential on stdin, verifies activation, and revokes automatically.
+    description: Trusted command for a deployment session. The action passes the reusable runtime credential on stdin and verifies activation.
     required: false
   version:
     description: Ory Agent CLI version. By default, the action requires an exact semantic-version action tag and uses that version.
@@ -39,10 +39,10 @@ outputs:
     description: Created or reused Agent Security deployment ID.
     value: ${{ steps.deploy.outputs.deployment-id }}
   created:
-    description: Whether this run created the deployment and issued a one-time runtime credential.
+    description: Whether this run created the registered deployment and its reusable runtime credential.
     value: ${{ steps.deploy.outputs.created }}
   credential-file:
-    description: Protected durable-mode runtime credential path. Empty when run is set.
+    description: Protected runtime credential path. Persist it in an external secret store for later runs.
     value: ${{ steps.deploy.outputs.credential-file }}
 
 runs:
