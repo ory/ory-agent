@@ -12,6 +12,20 @@ set -euo pipefail
 if [[ "${1:-}" == validate ]]; then
   exit 0
 fi
+if [[ "${1:-}" == deployment && "${2:-}" == run ]]; then
+  shift 2
+  result_file=""
+  while (($#)); do
+    case "$1" in
+      --result-file) result_file="$2"; shift 2 ;;
+      --) shift; break ;;
+      *) shift ;;
+    esac
+  done
+  printf '{"created":true,"deployment_id":"ephemeral-deployment-id"}\n' > "${result_file}"
+  printf 'ORY_AGENT_API_KEY=runtime-secret\n' | "$@"
+  exit 0
+fi
 [[ "${1:-}" == deployment && "${2:-}" == ensure ]]
 shift 2
 credential_file=""
@@ -71,5 +85,31 @@ grep -Fxq 'created=false' "${tmp}/output"
 
 if run_deploy expected-deployment-id false different-deployment-id >/dev/null 2>&1; then
   echo "deploy.sh accepted a mismatched deployment ID" >&2
+  exit 1
+fi
+
+: > "${tmp}/output"
+PATH="${tmp}/bin:${PATH}" \
+  RUNNER_TEMP="${tmp}/runner" \
+  GITHUB_OUTPUT="${tmp}/output" \
+  ORY_AGENT_DEPLOY_API_KEY="deployment-secret" \
+  ORY_PROJECT_URL="https://project.example.test" \
+  ORY_AGENT_SECURITY_URL="https://agents.example.test" \
+  MANIFEST=".ory/agent.yaml" \
+  RUN_COMMAND="read -r credential; [[ \"\${credential}\" == \"ORY_AGENT_API_KEY=runtime-secret\" ]]" \
+  "${root}/scripts/deploy.sh"
+grep -Fxq 'deployment-id=ephemeral-deployment-id' "${tmp}/output"
+grep -Fxq 'created=true' "${tmp}/output"
+grep -Fxq 'credential-file=' "${tmp}/output"
+[[ ! -e "${tmp}/runner/ory-agent-action/result.json" ]]
+
+if PATH="${tmp}/bin:${PATH}" \
+  RUNNER_TEMP="${tmp}/runner" \
+  GITHUB_OUTPUT="${tmp}/output" \
+  ORY_AGENT_DEPLOY_API_KEY="deployment-secret" \
+  RUN_COMMAND=true \
+  DEPLOYMENT_ID="existing-deployment-id" \
+  "${root}/scripts/deploy.sh" >/dev/null 2>&1; then
+  echo "deploy.sh accepted run with deployment-id" >&2
   exit 1
 fi
