@@ -1,5 +1,5 @@
 name: Deploy Ory Agent
-description: Create or reuse an Ory Agent Security deployment and write its one-time runtime credential to a protected file.
+description: Run a trusted deployment command with an ephemeral Agent Security credential, or create and reuse a durable deployment.
 author: Ory
 
 branding:
@@ -22,10 +22,13 @@ inputs:
     required: false
     default: .ory/agent.yaml
   deployment-id:
-    description: Existing deployment ID to validate and reuse. Omit only for initial creation.
+    description: Existing durable deployment ID to validate and reuse. Cannot be combined with run.
     required: false
   credential-file:
-    description: Destination for a newly issued runtime credential. Defaults to a protected runner temporary file.
+    description: Durable mode destination for a newly issued runtime credential. Cannot be combined with run.
+    required: false
+  run:
+    description: Trusted command for an ephemeral deployment. The action passes the runtime credential on stdin, verifies activation, and revokes automatically.
     required: false
   version:
     description: Ory Agent CLI version. By default, the action requires an exact semantic-version action tag and uses that version.
@@ -39,7 +42,7 @@ outputs:
     description: Whether this run created the deployment and issued a one-time runtime credential.
     value: ${{ steps.deploy.outputs.created }}
   credential-file:
-    description: Protected runtime credential path. The file exists only when created is true.
+    description: Protected durable-mode runtime credential path. Empty when run is set.
     value: ${{ steps.deploy.outputs.credential-file }}
 
 runs:
@@ -88,5 +91,6 @@ runs:
         MANIFEST: ${{ inputs.manifest }}
         DEPLOYMENT_ID: ${{ inputs.deployment-id }}
         REQUESTED_CREDENTIAL_FILE: ${{ inputs.credential-file }}
+        RUN_COMMAND: ${{ inputs.run }}
       run: |
         "${GITHUB_ACTION_PATH}/scripts/deploy.sh"
