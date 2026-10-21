@@ -6,9 +6,11 @@ Public release artifacts and the deployment action for the Ory Agent CLI.
 
 The action installs the CLI matching its exact release tag and verifies the signed release checksum manifest. With `run`, it creates an Agent Security deployment once, passes its reusable runtime credential to a trusted command over stdin, and verifies activation:
 
+Replace `vX.Y.Z` with the immutable tag for the release you have approved.
+
 ```yaml
 - id: ory-agent
-  uses: ory/ory-agent@v1.4.5
+  uses: ory/ory-agent@vX.Y.Z
   with:
     api-key: ${{ secrets.ORY_AGENT_DEPLOY_API_KEY }}
     project-url: ${{ vars.ORY_PROJECT_URL }}
@@ -22,7 +24,7 @@ Omit `run` to create or reuse a durable deployment and receive its one-time cred
 
 ```yaml
 - id: ory-agent
-  uses: ory/ory-agent@v1.4.5
+  uses: ory/ory-agent@vX.Y.Z
   with:
     api-key: ${{ secrets.ORY_AGENT_DEPLOY_API_KEY }}
     project-url: ${{ vars.ORY_PROJECT_URL }}
