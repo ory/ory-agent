@@ -27,7 +27,7 @@ if [[ -n "${RUN_COMMAND:-}" ]]; then
     echo "::error::Reusing a deployment with run requires its protected credential-file to be restored first."
     exit 1
   fi
-  ory-agent validate --manifest "${manifest}"
+  ory-agent deployment validate --offline --manifest "${manifest}" > /dev/null
   args=(deployment run --manifest "${manifest}" --state-file "${state_file}" --credential-file "${credential_file}" --result-file "${result_file}")
   if [[ -n "${DEPLOYMENT_ID:-}" ]]; then
     args+=(--deployment-id "${DEPLOYMENT_ID}")
@@ -54,8 +54,8 @@ mkdir -p "$(dirname "${credential_file}")" "$(dirname "${state_file}")"
   echo "::error::credential-file already exists; refusing to overwrite it."
   exit 1
 }
-ory-agent validate --manifest "${manifest}"
-args=(deployment ensure --manifest "${manifest}" --state-file "${state_file}" --credential-file "${credential_file}")
+ory-agent deployment validate --offline --manifest "${manifest}" > /dev/null
+args=(deployment run --manifest "${manifest}" --state-file "${state_file}" --credential-file "${credential_file}")
 if [[ -n "${DEPLOYMENT_ID:-}" ]]; then
   args+=(--deployment-id "${DEPLOYMENT_ID}")
 fi

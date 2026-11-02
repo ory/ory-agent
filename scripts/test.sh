@@ -9,23 +9,26 @@ mkdir -p "${tmp}/bin"
 cat > "${tmp}/bin/ory-agent" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ "${1:-}" == validate ]]; then
+if [[ "${1:-}" == deployment && "${2:-}" == validate ]]; then
+  [[ " $* " == *" --offline "* ]]
   exit 0
 fi
-if [[ "${1:-}" == deployment && "${2:-}" == run ]]; then
-  shift 2
-  result_file=""
-  credential_file=""
-  deployment_id=""
-  while (($#)); do
-    case "$1" in
-      --result-file) result_file="$2"; shift 2 ;;
-      --credential-file) credential_file="$2"; shift 2 ;;
-      --deployment-id) deployment_id="$2"; shift 2 ;;
-      --) shift; break ;;
-      *) shift ;;
-    esac
-  done
+[[ "${1:-}" == deployment && "${2:-}" == run ]]
+shift 2
+result_file=""
+credential_file=""
+deployment_id=""
+controller=false
+while (($#)); do
+  case "$1" in
+    --result-file) result_file="$2"; shift 2 ;;
+    --credential-file) credential_file="$2"; shift 2 ;;
+    --deployment-id) deployment_id="$2"; shift 2 ;;
+    --) shift; controller=true; break ;;
+    *) shift ;;
+  esac
+done
+if [[ "${controller}" == true ]]; then
   if [[ -z "${deployment_id}" ]]; then
     deployment_id="new-session-deployment-id"
     printf 'ORY_AGENT_API_KEY=runtime-secret\n' > "${credential_file}"
@@ -37,17 +40,6 @@ if [[ "${1:-}" == deployment && "${2:-}" == run ]]; then
   "$@" < "${credential_file}"
   exit 0
 fi
-[[ "${1:-}" == deployment && "${2:-}" == ensure ]]
-shift 2
-credential_file=""
-deployment_id=""
-while (($#)); do
-  case "$1" in
-    --credential-file) credential_file="$2"; shift 2 ;;
-    --deployment-id) deployment_id="$2"; shift 2 ;;
-    *) shift ;;
-  esac
-done
 deployment_id="${FAKE_ACTUAL_ID:-${deployment_id:-new-deployment-id}}"
 if [[ "${FAKE_CREATED}" == true ]]; then
   printf 'ORY_AGENT_API_KEY=runtime-secret\n' > "${credential_file}"
