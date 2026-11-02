@@ -75,7 +75,7 @@ jobs:
 
       - name: Reuse deployment and run activation probe
         id: ory-agent
-        uses: ory/ory-agent@v1.8.1
+        uses: ory/ory-agent@v1.9.0
         with:
           api-key: ${{ secrets.ORY_AGENT_DEPLOY_API_KEY }}
           project-url: ${{ vars.ORY_PROJECT_URL }}
