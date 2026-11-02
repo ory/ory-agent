@@ -1,0 +1,3 @@
+# ory-agent-framework depends on the agent-framework meta package, which installs every
+# Agent Framework connector. Its runtime dependencies are pinned in requirements.txt.
+ory-agent-framework==1.4.8

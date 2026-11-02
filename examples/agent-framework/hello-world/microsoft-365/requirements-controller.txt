@@ -1,0 +1,2 @@
+azure-identity==1.26.0
+azure-mgmt-resource-deployments==2.0.0

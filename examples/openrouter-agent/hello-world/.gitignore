@@ -1,0 +1,7 @@
+.env
+node_modules/
+*.tsbuildinfo
+
+.ory/.ory-agent-stage-*
+.ory/deployment-result.json
+.ory/openshell-image.json

@@ -2,6 +2,10 @@
 
 Public release artifacts and the deployment action for the Ory Agent CLI.
 
+## Examples
+
+The [`examples/`](examples/) directory contains runnable Agents that deploy with this action on E2B, NVIDIA OpenShell, and Microsoft 365.
+
 ## Deployment action
 
 The action installs the CLI matching its exact release tag and verifies the signed release checksum manifest. With `run`, it creates an Agent Security deployment once, passes its reusable runtime credential to a trusted command over stdin, and verifies activation:

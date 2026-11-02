@@ -1,0 +1,117 @@
+name: Deploy OpenRouter Agent to OpenShell
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Protected GitHub environment
+        required: true
+        type: environment
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: openrouter-openshell-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: examples/openrouter-agent/hello-world
+    env:
+      ORY_PROJECT_URL: ${{ vars.ORY_PROJECT_URL }}
+      ORY_AGENT_SECURITY_URL: https://agents.console.ory.com
+      ORY_AGENT_DEPLOYMENT_ID: ${{ vars.ORY_AGENT_DEPLOYMENT_ID }}
+      OPENSHELL_GATEWAY: hosted
+      OPENSHELL_GATEWAY_ENDPOINT: ${{ vars.OPENSHELL_GATEWAY_ENDPOINT }}
+      OPENSHELL_OIDC_ISSUER: ${{ vars.OPENSHELL_OIDC_ISSUER }}
+      OPENSHELL_OIDC_CLIENT_ID: ${{ vars.OPENSHELL_OIDC_CLIENT_ID }}
+      OPENSHELL_OIDC_AUDIENCE: ${{ vars.OPENSHELL_OIDC_AUDIENCE }}
+      OPENSHELL_WORKSPACE: ${{ vars.OPENSHELL_WORKSPACE }}
+      NO_COLOR: "1"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: examples/openrouter-agent/hello-world/.node-version
+
+      - name: Install OpenShell CLI
+        run: |
+          set -euo pipefail
+          archive="openshell-x86_64-unknown-linux-musl.tar.gz"
+          release="https://github.com/NVIDIA/OpenShell/releases/download/v0.1.2"
+          curl -fsSLo "${RUNNER_TEMP}/${archive}" "${release}/${archive}"
+          printf '%s  %s\n' \
+            '7eb6917285331a09e3300266a0558616481a5e9927cae2612ea07c4045b6dd6f' \
+            "${RUNNER_TEMP}/${archive}" | sha256sum --check -
+          mkdir -p "${RUNNER_TEMP}/openshell-bin"
+          tar -xzf "${RUNNER_TEMP}/${archive}" -C "${RUNNER_TEMP}/openshell-bin"
+          chmod 0755 "${RUNNER_TEMP}/openshell-bin/openshell"
+          printf '%s\n' "${RUNNER_TEMP}/openshell-bin" >> "${GITHUB_PATH}"
+
+      - name: Connect to hosted OpenShell
+        env:
+          OPENSHELL_OIDC_CLIENT_SECRET: ${{ secrets.OPENSHELL_OIDC_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          openshell gateway add "${OPENSHELL_GATEWAY_ENDPOINT}" \
+            --name "${OPENSHELL_GATEWAY}" \
+            --oidc-issuer "${OPENSHELL_OIDC_ISSUER}" \
+            --oidc-client-id "${OPENSHELL_OIDC_CLIENT_ID}" \
+            --oidc-audience "${OPENSHELL_OIDC_AUDIENCE}"
+          openshell status --output json
+          openshell whoami --output json
+
+      - name: Import provider profiles
+        env:
+          OPENSHELL_OIDC_CLIENT_SECRET: ${{ secrets.OPENSHELL_OIDC_CLIENT_SECRET }}
+        run: node openshell/deploy.ts setup
+
+      - name: Build and publish credential-free image
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          image_tag="ghcr.io/${GITHUB_REPOSITORY,,}:openshell-${GITHUB_SHA}"
+          printf '%s' "${GHCR_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+          node openshell/deploy.ts build --tag "${image_tag}" --push --output "${RUNNER_TEMP}/image.json"
+
+      - name: Restore Agent Security deployment credential
+        env:
+          ORY_AGENT_CREDENTIALS: ${{ secrets.ORY_AGENT_CREDENTIALS }}
+        run: |
+          set -euo pipefail
+          test -n "${ORY_AGENT_DEPLOYMENT_ID}"
+          test -n "${ORY_AGENT_CREDENTIALS}"
+          umask 077
+          printf '%s' "${ORY_AGENT_CREDENTIALS}" > "${RUNNER_TEMP}/ory-agent.env"
+
+      - name: Reuse deployment and run activation probe
+        id: ory-agent
+        uses: ory/ory-agent@v1.8.0
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENSHELL_OIDC_CLIENT_SECRET: ${{ secrets.OPENSHELL_OIDC_CLIENT_SECRET }}
+        with:
+          api-key: ${{ secrets.ORY_AGENT_DEPLOY_API_KEY }}
+          project-url: ${{ vars.ORY_PROJECT_URL }}
+          agent-security-url: https://agents.console.ory.com
+          manifest: examples/openrouter-agent/hello-world/.ory/agent.yaml
+          deployment-id: ${{ vars.ORY_AGENT_DEPLOYMENT_ID }}
+          credential-file: ${{ runner.temp }}/ory-agent.env
+          run: >-
+            node examples/openrouter-agent/hello-world/openshell/deploy.ts probe
+            --image-file "${RUNNER_TEMP}/image.json"
+
+      - name: Remove controller artifacts
+        if: always()
+        run: |
+          docker logout ghcr.io >/dev/null 2>&1 || true
+          rm -rf "${HOME}/.config/openshell" "${RUNNER_TEMP}"/{image.json,ory-agent.env,openshell-x86_64-unknown-linux-musl.tar.gz,openshell-bin}

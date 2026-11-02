@@ -1,0 +1,43 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.30/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.30",
+  "version": "1.0.0",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "developer": {
+    "name": "Ory",
+    "websiteUrl": "https://www.ory.com",
+    "privacyUrl": "https://www.ory.com/privacy",
+    "termsOfUseUrl": "https://www.ory.com/tos"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Ory Greeter",
+    "full": "Ory Agent Security hello world"
+  },
+  "description": {
+    "short": "Greets you through an Ory-guarded tool.",
+    "full": "A Microsoft Agent Framework custom engine agent whose Greet tool is observed and enforced by Ory Agent Security."
+  },
+  "accentColor": "#4F46E5",
+  "bots": [
+    {
+      "botId": "00000000-0000-0000-0000-000000000000",
+      "scopes": ["personal"],
+      "supportsFiles": false,
+      "isNotificationOnly": false
+    }
+  ],
+  "copilotAgents": {
+    "customEngineAgents": [
+      {
+        "type": "bot",
+        "id": "00000000-0000-0000-0000-000000000000"
+      }
+    ]
+  },
+  "permissions": ["identity"],
+  "validDomains": []
+}

@@ -1,0 +1,7 @@
+agent-framework-core==1.22.0
+agent-framework-foundry==1.15.0
+agent-framework-openai==1.17.0
+azure-identity==1.26.0
+microsoft-agents-authentication-msal==1.8.0
+microsoft-agents-hosting-aiohttp==1.8.0
+ory-argus==1.4.8
