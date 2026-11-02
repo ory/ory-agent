@@ -1,0 +1,2 @@
+openai-agents==0.22.3
+ory-openai-agents==1.4.2

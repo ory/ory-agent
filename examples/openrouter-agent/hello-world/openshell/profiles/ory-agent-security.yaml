@@ -1,0 +1,15 @@
+# Endpointless by design: the Agent Security origin differs per deployment, so the controller
+# binds each provider instance to that origin through `credential_binding` in sandbox policy.
+id: ory-agent-security
+display_name: Ory Agent Security
+description: Talos runtime API key from an Ory Agent Security deployment package
+category: other
+credentials:
+  - name: api_key
+    description: Agent Security deployment runtime API key
+    env_vars: [ORY_AGENT_API_KEY]
+    required: true
+    auth_style: bearer
+    header_name: authorization
+discovery:
+  credentials: [api_key]
