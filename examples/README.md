@@ -11,6 +11,8 @@ examples/<agent-sdk>/<agent-name>/
 examples/<harness>/<runtime>/
 ```
 
+An SDK example that supports more than one runtime keeps the extra runtime in its own `<runtime>/` subdirectory with its own README.
+
 Each example covers two Ory Agent Security features:
 
 - **Build** integrates an Ory Agent SDK adapter or harness plugin with the tool boundary and lifecycle.
@@ -45,6 +47,7 @@ Each README uses these sections in this order: **Build and Deploy**, **Security 
 | Agent SDK                                                 | Agent         | Runtime                           | Demonstrates                                                                                                                                                                                             |
 | --------------------------------------------------------- | ------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [OpenAI Agents SDK](openai-agents/hello-world/)           | `hello-world` | E2B                               | Guarded `Greet` tool, credential-free template, runtime identity, activation probe, and GitHub Actions                                                                                                   |
+| [OpenAI Agents SDK](openai-agents/hello-world/exe-dev/)   | `hello-world` | exe.dev                           | Guarded `Greet` tool, digest-verified bundle, short-lived standalone VM, credentials streamed over SSH stdin, and GitHub Actions                                                                         |
 | [OpenRouter Agent SDK](openrouter-agent/hello-world/)     | `hello-world` | Hosted NVIDIA OpenShell           | Guarded `Greet` tool, GHCR image, OIDC-authenticated gateway, provider-bound credentials, activation probe, and GitHub Actions                                                                           |
 | [Claude Code](claude-code/e2b/)                           | `claude-code` | E2B                               | Headless Claude Code, preinstalled Ory plugin, Deploy-issued runtime identity, guarded Bash call, and GitHub Actions                                                                                     |
 | [Microsoft Agent Framework](agent-framework/hello-world/) | `hello-world` | Microsoft 365 custom engine agent | Guarded `Greet` tool, Microsoft 365 Agents SDK channel, Azure Container Apps, managed-identity Azure Bot, keyless Microsoft Foundry model, Direct Line activation probe, app package, and GitHub Actions |

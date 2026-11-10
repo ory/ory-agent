@@ -4,7 +4,7 @@ Public release artifacts and the deployment action for the Ory Agent CLI.
 
 ## Examples
 
-The [`examples/`](examples/) directory contains runnable Agents that deploy with this action on E2B, NVIDIA OpenShell, and Microsoft 365.
+The [`examples/`](examples/) directory contains runnable Agents that deploy with this action on E2B, exe.dev, NVIDIA OpenShell, and Microsoft 365.
 
 ## Deployment action
 

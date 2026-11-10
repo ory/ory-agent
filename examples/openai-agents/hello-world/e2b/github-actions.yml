@@ -66,7 +66,7 @@ jobs:
 
       - name: Reuse deployment and run activation probe
         id: ory-agent
-        uses: ory/ory-agent@v1.9.0
+        uses: ory/ory-agent@v1.9.1
         env:
           E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

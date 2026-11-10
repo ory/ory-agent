@@ -1,0 +1,4 @@
+.ory/.ory-agent-stage-*
+.ory/deployment-result.json
+.ory/exe-dev-bundle.*
+__pycache__/

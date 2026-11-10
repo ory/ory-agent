@@ -1,6 +1,6 @@
 # OpenAI Agents hello world on E2B
 
-This example protects one OpenAI Agents function tool, `Greet`, with [Ory Agent Security](https://agents.console.ory.com/) and runs the Agent in an [E2B](https://e2b.dev/) sandbox.
+This example protects one OpenAI Agents function tool, `Greet`, with [Ory Agent Security](https://agents.console.ory.com/) and runs the Agent in an [E2B](https://e2b.dev/) sandbox. To run the same Agent in an [exe.dev](https://exe.dev/) VM instead, follow [`exe-dev/README.md`](exe-dev/README.md).
 
 ## Build and Deploy
 
