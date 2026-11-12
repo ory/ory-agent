@@ -95,7 +95,7 @@ jobs:
 
       - name: Reuse deployment and run activation probe
         id: ory-agent
-        uses: ory/ory-agent@v1.10.0
+        uses: ory/ory-agent@v1.10.1
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENSHELL_OIDC_CLIENT_SECRET: ${{ secrets.OPENSHELL_OIDC_CLIENT_SECRET }}
