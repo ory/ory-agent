@@ -1,3 +1,6 @@
 # ory-agent-framework depends on the agent-framework meta package, which installs every
 # Agent Framework connector. Its runtime dependencies are pinned in requirements.txt.
+# Install this file with --no-deps. The meta package stays pinned to the agent-framework-core
+# release in requirements.txt, so an install without --no-deps cannot float to a newer release.
+agent-framework==1.22.0
 ory-agent-framework==1.4.8
